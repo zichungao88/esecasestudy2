@@ -18,6 +18,6 @@ Y = lsim(sys_sir_base, zeros(1000, 1), linspace(0, 999, 1000), x0);
 plot(Y, 'LineWidth', 2);
 axis tight;
 title('SIRD Model');
-legend('Susceptible','Infected','Recovered','Deceased');
-xlabel('Time')
+legend('Susceptible', 'Infected', 'Recovered', 'Deceased');
+xlabel('Time');
 ylabel('Population Percentage');
