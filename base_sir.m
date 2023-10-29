@@ -19,7 +19,7 @@ plot(Y, 'LineWidth', 2);
 axis tight;
 title('SIRD Model');
 legend('Susceptible', 'Infected', 'Recovered', 'Deceased');
-xlabel('Time');
+xlabel('Elapsed Time (Days)');
 ylabel('Population Percentage');
 
 % Compared to the output of the manual implementation of the SIRD model in
