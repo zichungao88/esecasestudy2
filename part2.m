@@ -40,6 +40,23 @@ xlabel('Date');
 ylabel('Percent of Total Population');
 ytickformat('percentage');
 
+activeCases = []; % new weekly cases + a portion of previous cases
+newDeaths = []; % new weekly deaths
+% for purposes of model simplicity, we assume that 9 out of 10 active cases
+% from the previous week will carry over to current active cases in
+% addition to all new cases
+for j = 1:157
+    newCases = cases_STL(j + 1) - cases_STL(j);
+    if j == 1
+        activeCases = [activeCases, newCases];
+    else
+        activeCases = [activeCases, newCases + ...
+            round(activeCases(j - 1) * 9 / 10)];
+    end
+    newDeaths = [newDeaths, deaths_STL(j + 1) - deaths_STL(j)];
+end
+
+%%
 % set initial conditions based on given cases & deaths data
 % initial phase: 3/18/2020 ~ 6/29/2021
 d = deaths_STL(1) / POP_STL;
@@ -48,53 +65,120 @@ i = cases_STL(1) / POP_STL;
 s = 1 - i - d;
 x1 = [s, i, r, d]';
 
-newCases = [];
-newDeaths = [];
-for i = 1:67
-    newCases = [newCases, cases_STL(i + 1) - cases_STL(i)];
-    newDeaths = [newDeaths, deaths_STL(i + 1) - deaths_STL(i)];
+avgInitialActiveCases = mean(activeCases(1:67)) / ...
+    (POP_STL - cases_STL(67));
+initialNewDeaths = [];
+for j = 1:67
+    initialNewDeaths = [initialNewDeaths, newDeaths(j) / activeCases(j)];
 end
+avgInitialNewDeaths = mean(initialNewDeaths);
 
-avgNewCases = mean(newCases) / POP_STL;
-avgNewDeaths = mean(newDeaths) / POP_STL;
+% no more explicitly defining matrix elements prior to matrix declaration
+% as was the case in part1.m due to the excess amount of variables in the
+% MATLAB Workspace
+A1 = [1 - avgInitialActiveCases, 0.1 - avgInitialNewDeaths,  0,  0;
+      avgInitialActiveCases,     0.8                         0,  0;
+      0,                         0.1,                        1,  0;
+      0,                         avgInitialNewDeaths,        0,  1];
 
-ss = 1 - avgNewCases;   si = 0.7 - avgNewDeaths;    sr = 0;     sd = 0;
-is = avgNewCases;       ii = 0;                     ir = 0;     id = 0;
-rs = 0;                 ri = 0.3;                   rr = 1;     rd = 0;
-ds = 0;                 di = avgNewDeaths;          dr = 0;     dd = 1;
-
-A = [ss, si, sr, sd; is, ii, ir, id; rs, ri, rr, rd; ds, di, dr, dd];
-
-Y = x1; % day 1
-for i = 2:67 % days 2 to convergence
-    x1 = A * x1;
-    Y = [Y, x1];
+Y1 = x1; % week 1
+for j = 2:67 % weeks 2 to end of inital phase (before delta)
+    x1 = A1 * x1;
+    Y1 = [Y1, x1];
 end
 
 figure;
 hold on;
-plot(dates(1:67), Y' * 100, 'LineWidth', 2);
-plot(dates(1:67), newCases / POP_STL * 100, 'LineWidth', 2);
+plot(dates(1:67), Y1(2, :) * 100, 'LineWidth', 2); % infected
+plot(dates(1:67), Y1(4, :) * 100, 'LineWidth', 2); % deceased
+plot(dates(1:67), activeCases(1:67) / POP_STL * 100, 'LineWidth', 2);
 plot(dates(1:67), deaths_STL(1:67) / POP_STL * 100, 'LineWidth', 2);
 hold off
 axis tight;
-title('SIRD Model Fitting via Manual Parameter Tuning');
-legend('Susceptible', 'Infected', 'Recovered', 'Deceased', ...
-    'Active Cases', 'Total Deaths');
+title('SIRD Model Fitting via Manual Parameter Tuning (Initial Phase)');
+legend('Infected', 'Deceased', 'Active Cases', 'Total Deaths');
 xlabel('Date');
 ylabel('Percent of Total Population');
 ytickformat('percentage');
 
+%%
 % delta phase: 6/30/2021 ~ 10/26/2021
 d = deaths_STL(68) / POP_STL;
-r = 0; % ?
-i = cases_STL(68) / POP_STL;
-s = 1 - i - d;
+r = Y1(3, 67);
+i = cases_STL(68) / POP_STL - r - d;
+s = 1 - i - r - d;
 x2 = [s, i, r, d]';
 
+avgDeltaActiveCases = mean(activeCases(68:84)) / ...
+    (POP_STL - cases_STL(84));
+deltaNewDeaths = [];
+for j = 68:84
+    deltaNewDeaths = [deltaNewDeaths, newDeaths(j) / activeCases(j)];
+end
+avgDeltaNewDeaths = mean(deltaNewDeaths);
+
+A2 = [1 - avgDeltaActiveCases,   0.1 - avgDeltaNewDeaths,    0,  0;
+      avgDeltaActiveCases,       0.8                         0,  0;
+      0,                         0.1,                        1,  0;
+      0,                         avgDeltaNewDeaths,          0,  1];
+
+Y2 = x2;
+for j = 69:84
+    x2 = A2 * x2;
+    Y2 = [Y2, x2];
+end
+
+figure;
+hold on;
+plot(dates(68:84), Y2(2, :) * 100, 'LineWidth', 2);
+plot(dates(68:84), Y2(4, :) * 100, 'LineWidth', 2);
+plot(dates(68:84), activeCases(68:84) / POP_STL * 100, 'LineWidth', 2);
+plot(dates(68:84), deaths_STL(68:84) / POP_STL * 100, 'LineWidth', 2);
+hold off
+axis tight;
+title('SIRD Model Fitting via Manual Parameter Tuning (Delta Phase)');
+legend('Infected', 'Deceased', 'Active Cases', 'Total Deaths');
+xlabel('Date');
+ylabel('Percent of Total Population');
+ytickformat('percentage');
+
+%%
 % omicron phase: 10/27/2021 ~ 3/22/2022
 d = deaths_STL(85) / POP_STL;
-r = 0; % ?
-i = cases_STL(85) / POP_STL;
-s = 1 - i - d;
+r = Y2(3, 17);
+i = cases_STL(85) / POP_STL - r - d;
+s = 1 - i - r - d;
 x3 = [s, i, r, d]';
+
+avgOmicronActiveCases = mean(activeCases(85:105)) / ...
+    (POP_STL - cases_STL(105));
+omicronNewDeaths = [];
+for j = 85:105
+    omicronNewDeaths = [omicronNewDeaths, newDeaths(j) / activeCases(j)];
+end
+avgOmicronNewDeaths = mean(omicronNewDeaths);
+
+A3 = [1 - avgOmicronActiveCases,    0.1 - avgOmicronNewDeaths,  0,  0;
+      avgOmicronActiveCases,        0.8                         0,  0;
+      0,                            0.1,                        1,  0;
+      0,                            avgOmicronNewDeaths,        0,  1];
+
+Y3 = x3;
+for j = 86:105
+    x3 = A2 * x3;
+    Y3 = [Y3, x3];
+end
+
+figure;
+hold on;
+plot(dates(85:105), Y3(2, :) * 100, 'LineWidth', 2);
+plot(dates(85:105), Y3(4, :) * 100, 'LineWidth', 2);
+plot(dates(85:105), activeCases(85:105) / POP_STL * 100, 'LineWidth', 2);
+plot(dates(85:105), deaths_STL(85:105) / POP_STL * 100, 'LineWidth', 2);
+hold off
+axis tight;
+title('SIRD Model Fitting via Manual Parameter Tuning (Omicron Phase)');
+legend('Infected', 'Deceased', 'Active Cases', 'Total Deaths');
+xlabel('Date');
+ylabel('Percent of Total Population');
+ytickformat('percentage');
