@@ -159,7 +159,7 @@ A3 = [1 - avgOmicronActiveCases,    0.05 - avgOmicronNewDeaths, 0,  0;
 
 Y3 = x3;
 for j = 86:105
-    x3 = A2 * x3;
+    x3 = A3 * x3;
     Y3 = [Y3, x3];
 end
 
@@ -173,6 +173,39 @@ hold off
 axis tight;
 ylim([0 inf]);
 title('SIRD Model Fitting via Manual Parameter Tuning (Omicron Phase)');
+legend('Infected', 'Deceased', 'Active Cases', 'Total Deaths');
+xlabel('Date');
+ylabel('Percent of Total Population');
+ytickformat('percentage');
+
+%%
+% omicron phase w/ policy (mask mandate) resulting in 25% reduction in
+% cases & deaths
+x3 = x2;
+avgOmicronActiveCases = avgOmicronActiveCases * 0.75;
+
+A3 = [1 - avgOmicronActiveCases,    0.05 - avgOmicronNewDeaths, 0,  0;
+      avgOmicronActiveCases,        0.9                         0,  0;
+      0,                            0.05,                       1,  0;
+      0,                            avgOmicronNewDeaths,        0,  1];
+
+Y3 = x3;
+for j = 86:105
+    x3 = A3 * x3;
+    Y3 = [Y3, x3];
+end
+
+figure;
+hold on;
+plot(dates(85:105), Y3(2, :) * 100, 'LineWidth', 2);
+plot(dates(85:105), Y3(4, :) * 100, 'LineWidth', 2);
+plot(dates(85:105), activeCases(85:105) / POP_STL * 100, 'LineWidth', 2);
+plot(dates(85:105), deaths_STL(85:105) / POP_STL * 100, 'LineWidth', 2);
+hold off
+axis tight;
+ylim([0 inf]);
+title(['SIRD Model Fitting via Manual Parameter Tuning (Omicron Phase ' ...
+    'w/ Mask Mandate)']);
 legend('Infected', 'Deceased', 'Active Cases', 'Total Deaths');
 xlabel('Date');
 ylabel('Percent of Total Population');
