@@ -27,6 +27,7 @@ legend('Susceptible', 'Infected', 'Recovered', 'Deceased');
 xlabel('Elapsed Time (Days)');
 ylabel('Percent of Total Population');
 ytickformat('percentage');
+exportgraphics(gca, 'SIRD.png');
 
 % re-simulating the SIRD model but re-infections are possible i.e. a tiny
 % portion of previously-infected individuals will go back to being
@@ -55,6 +56,7 @@ legend('Susceptible', 'Infected', 'Recovered', 'Deceased');
 xlabel('Elapsed Time (Days)');
 ylabel('Percent of Total Population');
 ytickformat('percentage');
+exportgraphics(gca, 'SIRD_modified.png');
 
 % Compared to the output of the manual implementation of the SIRD model in
 % part1.m, implementation via pre-packaged MATLAB functions such as "lsim"
