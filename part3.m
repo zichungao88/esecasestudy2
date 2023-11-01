@@ -13,7 +13,7 @@ i = cases_STL(1) / POP_STL - d;
 s = 1 - i - d;
 x = [s, i, r, d]';
 
-% simulate all 157 weeks but w/ input
+% simulate all 158 weeks but w/ input
 activeCases = [];
 newCases = [];
 newDeaths = [];
@@ -53,12 +53,12 @@ end
 u = [1, 0, 0, 0]';
 
 % other location's dynamics matrix (input for STL)
-B = [0.97,  0.01,   0,  0;
-     0.03,  0.95,   0,  0;
-     0,     0.035,  1,  0;
-     0,     0.005,  0,  1];
+B = [0.97,  0.1,   0,  0;
+     0.03,  0.8,   0,  0;
+     0,     0.08,  1,  0;
+     0,     0.02,  0,  1];
 
-Z = x;
+Z = (x + u) / 2;
 for j = 2:length(newCases)
     x = (A * x + B * u) / 2;
     Z = [Z, x];
@@ -75,4 +75,17 @@ legend('No Traveling', 'Traveling from a Fictional Location');
 xlabel('Date');
 ylabel('Percent of Total STL City & County Population');
 ytickformat('percentage');
-exportgraphics(gca, 'travel.png');
+% exportgraphics(gca, 'travel.png');
+
+%%
+% what-if policy on travel restrictions implemented during a surge of new
+% cases in the initial phase (week 36) and continue throughout the end of
+% the Omicron phase (week 105)
+
+x1 = [s, i, r, d]';
+
+Z = (x1 + u) / 2;
+for j = 2:35
+    x1 = (A * x1 + B * u) / 2;
+    Z = [Z, x1];
+end
