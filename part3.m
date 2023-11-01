@@ -43,6 +43,12 @@ A = [1 - avgTotalNewCases,  0.09,                       0,  0;
      0,                     0.01 - avgTotalNewDeaths,   1,  0;
      0,                     avgTotalNewDeaths,          0,  1];
 
+Y = x;
+for j = 2:length(newCases)
+    x = A * x;
+    Y = [Y, x];
+end
+
 % other location's initial conditions
 u = [1, 0, 0, 0]';
 
@@ -52,8 +58,21 @@ B = [0.97,  0.01,   0,  0;
      0,     0.035,  1,  0;
      0,     0.005,  0,  1];
 
-Y = x;
+Z = x;
 for j = 2:length(newCases)
-    x = A * x + B * u;
-    Y = [Y, x];
+    x = (A * x + B * u) / 2;
+    Z = [Z, x];
 end
+
+hold on;
+plot(dates(2:158), Y(2, :) * 100, 'LineWidth', 2);
+plot(dates(2:158), Z(2, :) * 100, 'LineWidth', 2);
+hold off;
+axis tight;
+ylim([0 inf]);
+title('The Effects of Travel');
+legend('No Traveling', 'Traveling from a Fictional Location');
+xlabel('Date');
+ylabel('Percent of Total STL City & County Population');
+ytickformat('percentage');
+exportgraphics(gca, 'travel.png');
