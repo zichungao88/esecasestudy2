@@ -18,9 +18,9 @@ title('COVID Cases by Phases in St. Louis City & County');
 legend('Initial Phase', 'Delta Variant Phase', 'Omicron Variant Phase', ...
     'Most Recent Phase', 'Location', 'northwest');
 xlabel('Date');
-ylabel('Percent of Total STL Metro Population');
+ylabel('Percent of Total STL City & County Population');
 ytickformat('percentage');
-% exportgraphics(gca, 'cases.png');
+exportgraphics(gca, 'cases.png');
 
 % similarly, visualize total deaths over time
 figure;
@@ -38,16 +38,16 @@ title('COVID Deaths by Phases in St. Louis City & County');
 legend('Initial Phase', 'Delta Variant Phase', 'Omicron Variant Phase', ...
     'Most Recent Phase', 'Location', 'northwest');
 xlabel('Date');
-ylabel('Percent of Total STL Metro Population');
+ylabel('Percent of Total STL City & County Population');
 ytickformat('percentage');
-% exportgraphics(gca, 'deaths.png');
+exportgraphics(gca, 'deaths.png');
 
 activeCases = []; % new weekly cases + a portion of previous cases
 newCases = []; % new weekly cases only
 newDeaths = []; % new weekly deaths
 % for purposes of model simplicity, we assume that 9 out of 10 active
 % cases from the previous week will carry over to current active cases
-% in addition to all new cases (QUESTIONABLE ASSUMPTIONS —— NEEDS REVIEW)
+% in addition to all new cases
 for j = 1:157
     newCases = [newCases, cases_STL(j + 1) - cases_STL(j)];
     if j == 1
@@ -68,8 +68,9 @@ i = cases_STL(1) / POP_STL - d;
 s = 1 - i - d;
 x1 = [s, i, r, d]';
 
+% out of all susceptible population
 avgInitialNewCases = mean(newCases(1:67)) / ...
-    (POP_STL - cases_STL(67)); % out of all susceptible population
+    (POP_STL - mean(cases_STL(1:67)) + mean(activeCases(1:67)));
 initialNewDeaths = [];
 for j = 1:67
     initialNewDeaths = [initialNewDeaths, newDeaths(j) / activeCases(j)];
@@ -79,9 +80,9 @@ avgInitialNewDeaths = mean(initialNewDeaths);
 % no more explicitly defining matrix elements prior to matrix declaration
 % as was the case in part1.m due to the excess amount of variables in the
 % MATLAB Workspace
-A1 = [1 - avgInitialNewCases,   0.05 - avgInitialNewDeaths, 0,  0;
+A1 = [1 - avgInitialNewCases,   0.09,                       0,  0;
       avgInitialNewCases,       0.9                         0,  0;
-      0,                        0.05,                       1,  0;
+      0,                        0.01 - avgInitialNewDeaths, 1,  0;
       0,                        avgInitialNewDeaths,        0,  1];
 
 Y1 = x1; % week 1
@@ -102,25 +103,25 @@ ylim([0 inf]);
 title('SIRD Model Fitting via Manual Parameter Tuning (Initial Phase)');
 legend('Infected', 'Deceased', 'Active Cases', 'Total Deaths');
 xlabel('Date');
-ylabel('Percent of Total STL Metro Population');
+ylabel('Percent of Total STL City & County Population');
 ytickformat('percentage');
-% exportgraphics(gca, 'initial_phase.png');
+exportgraphics(gca, 'initial_phase.png');
 
 %%
 % delta phase: 6/30/2021 ~ 10/26/2021
 x2 = x1;
 
 avgDeltaNewCases = mean(newCases(68:84)) / ...
-    (POP_STL - cases_STL(84));
+    (POP_STL - mean(cases_STL(68:84)) + mean(activeCases(68:84)));
 deltaNewDeaths = [];
 for j = 68:84
     deltaNewDeaths = [deltaNewDeaths, newDeaths(j) / activeCases(j)];
 end
 avgDeltaNewDeaths = mean(deltaNewDeaths);
 
-A2 = [1 - avgDeltaNewCases,     0.05 - avgDeltaNewDeaths,   0,  0;
+A2 = [1 - avgDeltaNewCases,     0.09,                       0,  0;
       avgDeltaNewCases,         0.9                         0,  0;
-      0,                        0.05,                       1,  0;
+      0,                        0.01 - avgDeltaNewDeaths,   1,  0;
       0,                        avgDeltaNewDeaths,          0,  1];
 
 Y2 = x2;
@@ -141,25 +142,25 @@ ylim([0 inf]);
 title('SIRD Model Fitting via Manual Parameter Tuning (Delta Phase)');
 legend('Infected', 'Deceased', 'Active Cases', 'Total Deaths');
 xlabel('Date');
-ylabel('Percent of Total STL Metro Population');
+ylabel('Percent of Total STL City & County Population');
 ytickformat('percentage');
-% exportgraphics(gca, 'delta_phase.png');
+exportgraphics(gca, 'delta_phase.png');
 
 %%
 % omicron phase: 10/27/2021 ~ 3/22/2022
 x3 = x2;
 
 avgOmicronNewCases = mean(newCases(85:105)) / ...
-    (POP_STL - cases_STL(105));
+    (POP_STL - mean(cases_STL(85:105)) + mean(activeCases(85:105)));
 omicronNewDeaths = [];
 for j = 85:105
     omicronNewDeaths = [omicronNewDeaths, newDeaths(j) / activeCases(j)];
 end
 avgOmicronNewDeaths = mean(omicronNewDeaths);
 
-A3 = [1 - avgOmicronNewCases,   0.05 - avgOmicronNewDeaths, 0,  0;
+A3 = [1 - avgOmicronNewCases,   0.09,                       0,  0;
       avgOmicronNewCases,       0.9                         0,  0;
-      0,                        0.05,                       1,  0;
+      0,                        0.01 - avgOmicronNewDeaths, 1,  0;
       0,                        avgOmicronNewDeaths,        0,  1];
 
 Y3 = x3;
@@ -181,9 +182,9 @@ x3 = x2;
 avgOmicronNewCases = avgOmicronNewCases * 0.75;
 avgOmicronNewDeaths = avgOmicronNewDeaths * 0.75;
 
-A3 = [1 - avgOmicronNewCases,   0.05 - avgOmicronNewDeaths, 0,  0;
+A3 = [1 - avgOmicronNewCases,   0.09,                       0,  0;
       avgOmicronNewCases,       0.9                         0,  0;
-      0,                        0.05,                       1,  0;
+      0,                        0.01 - avgOmicronNewDeaths, 1,  0;
       0,                        avgOmicronNewDeaths,        0,  1];
 
 Y3 = x3;
@@ -203,6 +204,6 @@ legend('Infected', 'Deceased', 'Active Cases', 'Total Deaths', ...
     'Infected w/ Mask Mandate', 'Deceased w/ Mask Mandate', ...
      'Location', 'northwest');
 xlabel('Date');
-ylabel('Percent of Total STL Metro Population');
+ylabel('Percent of Total STL City & County Population');
 ytickformat('percentage');
-% exportgraphics(gca, 'omicron_phase.png');
+exportgraphics(gca, 'omicron_phase.png');
