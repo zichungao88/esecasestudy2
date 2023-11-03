@@ -1,7 +1,7 @@
 % Part III: The Effects of Travel
 
 load('COVID_STL.mat');
-realDates = dates;
+realDates = dates(3:length(dates));
 load('COVIDbyCounty.mat');
 
 % population 1 = St. Louis City + County (given data)
@@ -107,31 +107,20 @@ for j = 2:length(dates) - 1
 end
 
 hold on;
-plot(dates(1:length(dates) - 1), Y1(2, :) * 100, 'LineWidth', 2);
-plot(dates(1:length(dates) - 1), Y(2, :) * 100, 'LineWidth', 2);
+plot(realDates(1:length(dates) - 1), Y1(2, :) * 100, 'LineWidth', 2);
+plot(realDates(1:length(dates) - 1), Y(2, :) * 100, 'LineWidth', 2);
+plot(realDates(1:length(dates) - 1), Y2(2, :) * 100, 'LineWidth', 2);
+plot(realDates(1:length(dates) - 1), Y(6, :) * 100, 'LineWidth', 2);
 hold off;
 axis tight;
 ylim([0 inf]);
-title('Effects of Travel on St. Louis City & County, MO');
-legend('Active Cases w/o Traveling', 'Active Cases w/ Traveling');
+title('Effects of Travel');
+legend('STL Active Cases w/o Travel', 'STL Active Cases w/ Travel', ...
+    'RVS Active Cases w/o Travel', 'RVS Active Cases w/ Travel');
 xlabel('Date');
-ylabel('Percent of Total STL City + County Population');
+ylabel('Percent of Total Population for Each Respective Region');
 ytickformat('percentage');
-exportgraphics(gca, 'travel_STL.png');
-
-figure;
-hold on;
-plot(dates(1:length(dates) - 1), Y2(2, :) * 100, 'LineWidth', 2);
-plot(dates(1:length(dates) - 1), Y(6, :) * 100, 'LineWidth', 2);
-hold off;
-axis tight;
-ylim([0 inf]);
-title('Effects of Travel on Riverside County, CA');
-legend('Active Cases w/o Traveling', 'Active Cases w/ Traveling');
-xlabel('Date');
-ylabel('Percent of Total Riverside County Population');
-ytickformat('percentage');
-exportgraphics(gca, 'travel_RVS.png');
+exportgraphics(gca, 'travel.png');
 
 %%
 % what-if policy on travel restrictions implemented during a surge of new
@@ -164,26 +153,54 @@ end
 avgPreNewCases2 = mean(preNewCases2) / (POP_RVS - ...
     mean(cumulativeCases2(1:35)) + mean(preActiveCases2));
 
-Y = x;
+x3 = [s1, i1, r1, d1, s2, i2, r2, d2]';
+
+A = [1 - avgPreNewCases1,       0.09,                           0,  0;
+     avgPreNewCases1,           0.9,                            0,  0;
+     0,                         0.01 - avgPreNewDeaths1,        1,  0;
+     0,                         avgPreNewDeaths1,               0,  1];
+
+D = [1 - avgPreNewCases2,       0.1,                            0,  0;
+     avgPreNewCases2,           0.8,                            0,  0;
+     0,                         0.095,                          1,  0;
+     0,                         0.005,                          0,  1];
+
+E = [A, B; C, D];
+
+Y3 = x3;
 for j = 2:35
-    x = (E * x) / 2;
-    Y = [Y, x];
+    x3 = (E * x3) / 2;
+    Y3 = [Y3, x3];
 end
+
+figure;
+hold on;
+plot(realDates(1:35), Y3(2, :) * 100, 'LineWidth', 2);
+plot(realDates(1:35), Y3(6, :) * 100, 'LineWidth', 2);
+hold off;
+axis tight;
+ylim([0 inf]);
+title('Prior to Travel Restrictions');
+legend('STL Active Cases', 'RVS Active Cases');
+xlabel('Date');
+ylabel('Percent of Total Population for Each Respective Region');
+ytickformat('percentage');
+exportgraphics(gca, 'no_restrictions.png');
 
 %%
 % first post-policy phase: 11/18/2020 ~ 6/29/2021
 
-avgPostNewCases1 = mean(newCases1(35:67)) / (POP_STL - ...
-    mean(cases_STL(35:67)) + mean(activeCases1(35:67)));
+avgPostNewCases1 = mean(newCases1(36:67)) / (POP_STL - ...
+    mean(cases_STL(36:67)) + mean(activeCases1(36:67)));
 postNewDeaths1 = [];
-for j = 35:67
+for j = 36:67
     postNewDeaths1 = [postNewDeaths1, newDeaths1(j) / activeCases1(j)];
 end
 avgPostNewDeaths1 = mean(postNewDeaths1);
 
 postActiveCases2 = [];
-postNewCases2 = cases_RVS(35:67);
-for j = 1:33
+postNewCases2 = cases_RVS(36:67);
+for j = 1:32
     if j == 1
         postActiveCases2 = [postActiveCases2, postNewCases2(j)];
     else
@@ -192,7 +209,55 @@ for j = 1:33
     end
 end
 avgPostNewCases2 = mean(postNewCases2) / (POP_RVS - ...
-    mean(cumulativeCases2(35:67)) + mean(postActiveCases2));
+    mean(cumulativeCases2(36:67)) + mean(postActiveCases2));
+
+x4 = x3;
+
+A = [1 - avgPostNewCases1,      0.09,                           0,  0;
+     avgPostNewCases1,          0.9,                            0,  0;
+     0,                         0.01 - avgPostNewDeaths1,       1,  0;
+     0,                         avgPostNewDeaths1,              0,  1];
+
+B = [0.995,                     0.01,                           0,  0;
+     0.005,                     0.98,                           0,  0;
+     0,                         0.01,                           1,  0;
+     0,                         0,                              0,  1];
+
+C = [0.99,                      0.005,                          0,  0;
+     0.01,                      0.99,                           0,  0;
+     0,                         0.005,                          1,  0;
+     0,                         0,                              0,  1];
+
+D = [1 - avgPostNewCases2,      0.1,                            0,  0;
+     avgPostNewCases2,          0.8,                            0,  0;
+     0,                         0.095,                          1,  0;
+     0,                         0.005,                          0,  1];
+
+E = [A, B; C, D];
+
+Y4 = x4;
+for j = 37:67
+    x4 = (E * x4) / 2;
+    Y4 = [Y4, x4];
+end
+
+figure;
+hold on;
+plot(realDates(36:67), Y(2, 36:67) * 100, 'LineWidth', 2);
+plot(realDates(36:67), Y4(2, :) * 100, 'LineWidth', 2);
+plot(realDates(36:67), Y(6, 36:67) * 100, 'LineWidth', 2);
+plot(realDates(36:67), Y4(6, :) * 100, 'LineWidth', 2);
+hold off;
+axis tight;
+ylim([0 inf]);
+title('Initial Phase of Travel Restrictions');
+legend('STL Active Cases w/o Travel Restrictions', ['STL Active Cases ' ...
+    'w/ Travel Restrictions'], ['RVS Active Cases w/o Travel ' ...
+    'Restrictions'], 'RVS Active Cases w/ Travel Restrictions');
+xlabel('Date');
+ylabel('Percent of Total Population for Each Respective Region');
+ytickformat('percentage');
+exportgraphics(gca, 'initial_restrictions.png');
 
 %%
 % delta phase: 6/30/2021 ~ 10/26/2021
@@ -218,6 +283,44 @@ end
 avgDeltaNewCases2 = mean(deltaNewCases2) / (POP_RVS - ...
     mean(cumulativeCases2(68:84)) + mean(deltaActiveCases2));
 
+x5 = x4;
+
+A = [1 - avgDeltaNewCases1,     0.09,                           0,  0;
+     avgDeltaNewCases1,         0.9,                            0,  0;
+     0,                         0.01 - avgDeltaNewDeaths1,      1,  0;
+     0,                         avgDeltaNewDeaths1,             0,  1];
+
+D = [1 - avgDeltaNewCases2,     0.1,                            0,  0;
+     avgDeltaNewCases2,         0.8,                            0,  0;
+     0,                         0.095,                          1,  0;
+     0,                         0.005,                          0,  1];
+
+E = [A, B; C, D];
+
+Y5 = x5;
+for j = 69:84
+    x5 = (E * x5) / 2;
+    Y5 = [Y5, x5];
+end
+
+figure;
+hold on;
+plot(realDates(68:84), Y(2, 68:84) * 100, 'LineWidth', 2);
+plot(realDates(68:84), Y5(2, :) * 100, 'LineWidth', 2);
+plot(realDates(68:84), Y(6, 68:84) * 100, 'LineWidth', 2);
+plot(realDates(68:84), Y5(6, :) * 100, 'LineWidth', 2);
+hold off;
+axis tight;
+ylim([0 inf]);
+title('Delta Phase of Travel Restrictions');
+legend('STL Active Cases w/o Travel Restrictions', ['STL Active Cases ' ...
+    'w/ Travel Restrictions'], ['RVS Active Cases w/o Travel ' ...
+    'Restrictions'], 'RVS Active Cases w/ Travel Restrictions');
+xlabel('Date');
+ylabel('Percent of Total Population for Each Respective Region');
+ytickformat('percentage');
+exportgraphics(gca, 'delta_restrictions.png');
+
 %%
 % omicron phase: 10/27/2021 ~ 3/22/2022
 
@@ -228,7 +331,7 @@ for j = 85:105
     omicronNewDeaths1 = [omicronNewDeaths1, newDeaths1(j) / ...
         activeCases1(j)];
 end
-avgDeltaNewDeaths1 = mean(omicronNewDeaths1);
+avgOmicronNewDeaths1 = mean(omicronNewDeaths1);
 
 omicronActiveCases2 = [];
 omicronNewCases2 = cases_RVS(85:105);
@@ -243,3 +346,41 @@ for j = 1:21
 end
 avgOmicronNewCases2 = mean(omicronNewCases2) / (POP_RVS - ...
     mean(cumulativeCases2(85:105)) + mean(omicronActiveCases2));
+
+x6 = x5;
+
+A = [1 - avgOmicronNewCases1,   0.09,                           0,  0;
+     avgOmicronNewCases1,       0.9,                            0,  0;
+     0,                         0.01 - avgOmicronNewDeaths1,    1,  0;
+     0,                         avgOmicronNewDeaths1,           0,  1];
+
+D = [1 - avgOmicronNewCases2,   0.1,                            0,  0;
+     avgOmicronNewCases2,       0.8,                            0,  0;
+     0,                         0.095,                          1,  0;
+     0,                         0.005,                          0,  1];
+
+E = [A, B; C, D];
+
+Y6 = x6;
+for j = 86:105
+    x6 = (E * x6) / 2;
+    Y6 = [Y6, x6];
+end
+
+figure;
+hold on;
+plot(realDates(85:105), Y(2, 85:105) * 100, 'LineWidth', 2);
+plot(realDates(85:105), Y6(2, :) * 100, 'LineWidth', 2);
+plot(realDates(85:105), Y(6, 85:105) * 100, 'LineWidth', 2);
+plot(realDates(85:105), Y6(6, :) * 100, 'LineWidth', 2);
+hold off;
+axis tight;
+ylim([0 inf]);
+title('Omicron Phase of Travel Restrictions');
+legend('STL Active Cases w/o Travel Restrictions', ['STL Active Cases ' ...
+    'w/ Travel Restrictions'], ['RVS Active Cases w/o Travel ' ...
+    'Restrictions'], 'RVS Active Cases w/ Travel Restrictions');
+xlabel('Date');
+ylabel('Percent of Total Population for Each Respective Region');
+ytickformat('percentage');
+exportgraphics(gca, 'omicron_restrictions.png');
