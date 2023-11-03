@@ -90,11 +90,11 @@ x2 = x1;
 vaxInfectionRate = mean(newInfections(vaxDate:length(newInfections)));
 vaxDeathRate = mean(newDeaths(vaxDate:length(newDeaths)));
 
-A2 = [0.5 - vaxInfectionRate,   0.03,                   0,  0,  0;
-      vaxInfectionRate,         0.95,                   0,  0,  0;
-      0,                        0.02 - vaxDeathRate,    1,  0,  0;
-      0.5,                      0,                      0,  1,  0;
-      0,                        vaxDeathRate,           0,  0,  1];
+A2 = [1 - vaxInfectionRate - vaxRate,   0.03,                   0,  0,  0;
+      vaxInfectionRate,                 0.95,                   0,  0,  0;
+      0,                                0.02 - vaxDeathRate,    1,  0,  0;
+      vaxRate,                          0,                      0,  1,  0;
+      0,                                vaxDeathRate,           0,  0,  1];
 
 Y2 = x2;
 for j = vaxDate + 1:length(newInfections)
@@ -110,7 +110,7 @@ for j = vaxDate:length(newInfections)
     if j == vaxDate
         vaxpop = [vaxpop, vaxRate];
     else
-        vaxpop = [vaxpop, vaxpop(j - 1) + vaxRate * vaxpop(j - 1)];
+        vaxpop = [vaxpop, vaxpop(j - 1) + vaxRate * (1 - vaxpop(j - 1))];
     end
 end
 vaxbreak = zeros(1, breakthroughDate - 1);
@@ -119,8 +119,22 @@ for j = breakthroughDate:length(newInfections)
         vaxbreak = [vaxbreak, breakthroughRate];
     else
         vaxbreak = [vaxbreak, vaxbreak(j - 1) + breakthroughRate * ...
-            vaxbreak(j - 1)];
+            (1 - vaxbreak(j - 1))];
     end
 end
+
+figure;
+hold on;
+plot(vaxpop * 100, 'LineWidth', 1.5);
+plot(vaxbreak * 100, 'LineWidth', 1.5);
+hold off;
+axis tight;
+title('Vaccinations & Breakthrough Infections');
+legend('Vaccinated', 'Experiencing Breakthrough Infection', 'Location', ...
+    'northwest');
+xlabel('Elapsed Time (Days)');
+ylabel('Percent of Total Population');
+ytickformat('percentage');
+exportgraphics(gca, 'competition.png');
 
 save('competition.mat', 'vaxpop', 'vaxbreak');
